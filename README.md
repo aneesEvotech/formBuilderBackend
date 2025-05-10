@@ -18,3 +18,20 @@ Clone the repository and install dependencies:
 
 ```bash
 npm install
+
+# package
+Express: Web framework for building REST APIs.
+
+CORS: Enables cross-origin requests.
+
+Dotenv: Loads environment variables.
+
+Nodemon: Auto-restarts server on file changes (dev only).
+
+BcryptJS: For hashing passwords.
+
+JSONWebToken: For user authentication.
+
+MongoDB: MongoDB Node.js driver.
+
+Mongoose: MongoDB object modeling tool.
