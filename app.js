@@ -21,6 +21,12 @@ app.use(
     credentials: true,
   })
 );
+app.use(
+  cors({
+    origin: "https://formbuilderevotechfrontend.vercel.app",
+    credentials: true,
+  })
+);
 
 app.use(express.json());
 app.use("/api/forms", apiroute);
