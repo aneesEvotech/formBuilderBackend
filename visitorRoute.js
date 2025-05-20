@@ -12,9 +12,7 @@ router.post('/track', trackerVisitors, (req, res) => {
 router.get('/count/:url', async (req, res) => {
     try {
         const url = '/' + req.params.url;
-
         const visitors = await Visitor.find({ url });
-
         const total = visitors.length;
         const uniqueIPs = new Set(visitors.map(v => v.ip));
         const unique = uniqueIPs.size;
