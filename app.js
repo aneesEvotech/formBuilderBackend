@@ -11,6 +11,7 @@ const app = express();
 const allowedOrigins = [
   "http://localhost:3000",
   "https://formbuilderevotechfrontend.vercel.app",
+  "https://form-builder-frontends.vercel.app"
 ];
 
 app.use(
