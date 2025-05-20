@@ -5,6 +5,7 @@ const cors = require("cors");
 const apiroute = require("./apiroute");
 const authroute = require("./authapiroute");
 const responseroute = require("./responseroute");
+const visitorRoute = require("./visitorRoute");
 const app = express();
 
 const allowedOrigins = [
@@ -32,6 +33,7 @@ app.use(express.json());
 app.use("/api/forms", apiroute);
 app.use("/api/responses", responseroute);
 app.use("/auth/api", authroute);
+app.use("/api/visitor", visitorRoute);
 
 mongoose
   .connect(process.env.DATABASE_URL)
