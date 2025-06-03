@@ -11,7 +11,7 @@ const app = express();
 const allowedOrigins = [
   "http://localhost:3000",
   // "https://formbuilderevotechfrontend.vercel.app",
-  "https://form-builder-frontends.vercel.app"
+  "https://form-builder-frontends.vercel.app",
 ];
 
 app.use(
@@ -36,12 +36,42 @@ app.use("/api/responses", responseroute);
 app.use("/auth/api", authroute);
 app.use("/api/visitor", visitorRoute);
 
+app.get("/", (req, res) => {
+  res.send(`
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>Form Builder Backend</title>
+      <style>
+        body {
+          font-family: Arial, sans-serif;
+          background-color: #f2f4f8;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          height: 100vh;
+          margin: 0;
+        }
+        h1 {
+          color: #2c3e50;
+        }
+      </style>
+    </head>
+    <body>
+      <h1>Welcome to Form Builder Backend Server</h1>
+    </body>
+    </html>
+  `);
+});
+
 mongoose
   .connect(process.env.DATABASE_URL)
   .then(() => {
     console.log("database is connected.");
     app.listen(process.env.PORT, () => {
-      console.log("server is running on port number 3001");
+      console.log("server is running on port number", process.env.PORT);
     });
   })
   .catch((error) => {
