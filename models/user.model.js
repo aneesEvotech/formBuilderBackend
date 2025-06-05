@@ -26,7 +26,7 @@ const UserSchema = mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ["user", "admin", "moderator"],
+      enum: ["user", "admin", "vendor", "customer"],
       default: "user",
     },
     phone: {
@@ -66,6 +66,37 @@ const UserSchema = mongoose.Schema(
     updatedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
+    },
+    subscription: {
+      plan: {
+        type: String,
+        enum: ["freemium", "pro"],
+        default: "freemium",
+      },
+      status: {
+        type: String,
+        enum: ["active", "inactive", "cancelled", "past_due"],
+        default: "inactive",
+      },
+      startDate: {
+        type: Date,
+      },
+      endDate: {
+        type: Date,
+      },
+      stripeCustomerId: {
+        type: String,
+      },
+      stripeSubscriptionId: {
+        type: String,
+      },
+      paymentMethodLast4: {
+        type: String,
+      },
+    },
+    featureOverrides: {
+      type: [String],
+      default: [],
     },
   },
   {

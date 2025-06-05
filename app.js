@@ -2,10 +2,13 @@ const express = require("express");
 const mongoose = require("mongoose");
 require("dotenv").config();
 const cors = require("cors");
+const cookieParser = require("cookie-parser");
 const apiroute = require("./apiroute");
 const authroute = require("./authapiroute");
 const responseroute = require("./responseroute");
 const visitorRoute = require("./visitorRoute");
+const subscription = require("./subscriptionRoutes");
+const stripeRoute = require("./stripeWebhookRoute");
 const app = express();
 
 const allowedOrigins = [
@@ -29,12 +32,15 @@ app.use(
     credentials: true,
   })
 );
-
+app.use("/api/stripe", stripeRoute);
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 app.use("/api/forms", apiroute);
 app.use("/api/responses", responseroute);
-app.use("/auth/api", authroute);
+app.use("/api/auth", authroute);
 app.use("/api/visitor", visitorRoute);
+app.use("/api/subscriptions", subscription);
 
 app.get("/", (req, res) => {
   res.send(`

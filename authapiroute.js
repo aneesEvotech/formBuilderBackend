@@ -53,47 +53,59 @@ route.post("/register", async (req, res) => {
 
 route.post("/login", async (req, res) => {
   try {
+    console.log("Request body:", req.body);
     const { username, password } = req.body;
     if (!username || !password) {
       return res
         .status(400)
-        .json({ message: "username and password are required." });
+        .json({ message: "Username and password are required." });
     }
 
     const user = await User.findOne({ username });
-    if (!user) {
-      return res.status(401).json({ message: "Invalid credentials." });
-    }
+    console.log("Found user:", user);
+    if (!user) return res.status(401).json({ message: "Invalid credentials." });
 
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
+    console.log("Password match:", isMatch);
+    if (!isMatch)
       return res.status(401).json({ message: "Invalid credentials." });
+
+    if (!process.env.JWT_SCRETE) {
+      console.error("JWT_SCRETE is not set!");
+      return res.status(500).json({ message: "Server config error." });
     }
 
     const token = jwt.sign(
       {
         userId: user._id,
-        email: user.email,
         role: user.role,
-        username: user.username,
+        user : user,
       },
-      JWT_SECRET,
+      process.env.JWT_SCRETE,
       { expiresIn: "1d" }
     );
 
-    res.status(200).json({
-      message: "Login successful.",
-      token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        username: user.username,
-      },
-    });
-  } catch (error) {
-    console.error("Login error:", error);
+    res
+      .cookie("token", token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 30 * 24 * 60 * 60 * 1000,
+      })
+      .status(200)
+      .json({
+        message: "Login successful.",
+        token,
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          username: user.username,
+        },
+      });
+  } catch (err) {
+    console.error("Login error:", err);
     res.status(500).json({ message: "Server error. Please try again later." });
   }
 });
@@ -110,7 +122,7 @@ route.get("/getallusers", async (req, res) => {
 
 route.put("/updateuser/:id", async (req, res) => {
   try {
-    const { username, email, phone , role } = req.body;
+    const { username, email, phone, role } = req.body;
     const user = await User.findByIdAndUpdate(req.params.id, {
       username,
       email,
@@ -142,13 +154,5 @@ route.get("/getuserbyid/:id", async (req, res) => {
     console.error("Get user by ID error:", error);
   }
 });
-
-
-
-
-
-
-
-
 
 module.exports = route;
