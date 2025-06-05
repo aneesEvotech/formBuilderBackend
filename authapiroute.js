@@ -53,7 +53,6 @@ route.post("/register", async (req, res) => {
 
 route.post("/login", async (req, res) => {
   try {
-    console.log("Request body:", req.body);
     const { username, password } = req.body;
     if (!username || !password) {
       return res
@@ -62,16 +61,13 @@ route.post("/login", async (req, res) => {
     }
 
     const user = await User.findOne({ username });
-    console.log("Found user:", user);
     if (!user) return res.status(401).json({ message: "Invalid credentials." });
 
     const isMatch = await bcrypt.compare(password, user.password);
-    console.log("Password match:", isMatch);
     if (!isMatch)
       return res.status(401).json({ message: "Invalid credentials." });
 
     if (!process.env.JWT_SCRETE) {
-      console.error("JWT_SCRETE is not set!");
       return res.status(500).json({ message: "Server config error." });
     }
 
@@ -88,8 +84,8 @@ route.post("/login", async (req, res) => {
     res
       .cookie("token", token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
+        secure: true,
+        sameSite: "none",
         maxAge: 30 * 24 * 60 * 60 * 1000,
       })
       .status(200)
