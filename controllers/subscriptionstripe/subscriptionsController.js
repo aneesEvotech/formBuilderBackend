@@ -71,7 +71,7 @@ const createCheckoutSession = async (req, res) => {
     console.error("Stripe Checkout Error:", err);
     return res
       .status(500)
-      .json({ message: "Failed to create checkout session" });
+      .json({ message: "Failed to create checkout session" + err });
   }
 };
 
@@ -144,7 +144,7 @@ const handleStripeWebhook = async (req, res) => {
         const userId = s.metadata.userId;
         const plan = s.metadata.plan || "pro plan";
         const session = event.data.object;
-        
+
         const subscription = session.subscription?.items
           ? session.subscription
           : await stripe.subscriptions.retrieve(session.subscription, {
