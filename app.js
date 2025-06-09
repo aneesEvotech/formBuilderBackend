@@ -32,7 +32,11 @@ app.use(
     credentials: true,
   })
 );
-app.use("/api/stripe", stripeRoute);
+app.use(
+  "/api/stripe/webhook",
+  express.raw({ type: "application/json" }),
+  stripeRoute
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());

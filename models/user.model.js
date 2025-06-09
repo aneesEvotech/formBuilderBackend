@@ -27,7 +27,7 @@ const UserSchema = mongoose.Schema(
     role: {
       type: String,
       enum: ["user", "admin", "vendor", "customer"],
-      default: "user",
+      default: "admin",
     },
     phone: {
       type: String,
@@ -70,7 +70,7 @@ const UserSchema = mongoose.Schema(
     subscription: {
       plan: {
         type: String,
-        enum: ["freemium", "pro"],
+        enum: ["freemium", "pro plan"],
         default: "freemium",
       },
       status: {

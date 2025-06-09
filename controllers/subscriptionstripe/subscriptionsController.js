@@ -11,6 +11,29 @@ const statusMap = {
   incomplete_expired: "inactive",
 };
 
+const getPeriodDates = (subscription) => {
+  let latestStart = null; // seconds-epoch
+  let earliestEnd = null; // seconds-epoch
+
+  for (const { current_period_start: s, current_period_end: e } of subscription
+    ?.items?.data || []) {
+    if (typeof s === "number") {
+      latestStart = latestStart === null ? s : Math.max(latestStart, s);
+    }
+
+    if (typeof e === "number") {
+      earliestEnd = earliestEnd === null ? e : Math.min(earliestEnd, e);
+    }
+  }
+
+  return {
+    start: latestStart !== null ? new Date(latestStart * 1000) : null,
+    end: earliestEnd !== null ? new Date(earliestEnd * 1000) : null,
+  };
+};
+
+const toDate = (unix) => (unix ? new Date(unix * 1000) : null);
+
 const createCheckoutSession = async (req, res) => {
   try {
     const user = req.user;
@@ -40,6 +63,7 @@ const createCheckoutSession = async (req, res) => {
       success_url: `${process.env.FRONTEND_URL}/subscription-success`,
       cancel_url: `${process.env.FRONTEND_URL}/subscription-cancel`,
       metadata: { userId: user._id.toString(), plan },
+      expand: ["subscription", "subscription.items.data"],
     });
 
     return res.status(200).json({ url: session.url });
@@ -79,8 +103,6 @@ const getplans = async (req, res) => {
       expand: ["data.product"],
     });
 
-    console.log("Full prices response:", JSON.stringify(prices, null, 2));
-
     if (prices.data.length === 0) {
       return res.status(404).json({ error: "No active prices found" });
     }
@@ -103,7 +125,7 @@ const getplans = async (req, res) => {
 
 const handleStripeWebhook = async (req, res) => {
   let event;
-  console.log("webhook start hitting");
+
   try {
     event = stripe.webhooks.constructEvent(
       req.body,
@@ -111,27 +133,34 @@ const handleStripeWebhook = async (req, res) => {
       process.env.STRIPE_WEBHOOK_SECRET
     );
   } catch (err) {
-    console.error("⚠️  Webhook signature failed.", err.message);
+    console.error("Webhook signature failed:", err.message);
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
-  console.log("we get Even type", event.type);
 
   try {
     switch (event.type) {
       case "checkout.session.completed": {
         const s = event.data.object;
         const userId = s.metadata.userId;
-        const plan = s.metadata.plan;
+        const plan = s.metadata.plan || "pro plan";
+        const session = event.data.object;
+        
+        const subscription = session.subscription?.items
+          ? session.subscription
+          : await stripe.subscriptions.retrieve(session.subscription, {
+              expand: ["items.data"],
+            });
+        const { start, end } = getPeriodDates(subscription);
 
         const user = await User.findById(userId);
         if (user) {
           user.subscription = {
-            ...user.subscription,
             stripeCustomerId: s.customer,
             stripeSubscriptionId: s.subscription,
             plan,
             status: "active",
-            startDate: new Date(), // now
+            startDate: start || new Date(),
+            endDate: end,
           };
           user.isActive = true;
           await user.save();
@@ -139,37 +168,35 @@ const handleStripeWebhook = async (req, res) => {
         break;
       }
 
-      /* ---------- Renewals / cancellations ---------- */
       case "customer.subscription.created":
       case "customer.subscription.updated":
       case "customer.subscription.deleted": {
         const sub = event.data.object;
+        const { start, end } = getPeriodDates(sub);
 
         const user = await User.findOne({
           "subscription.stripeCustomerId": sub.customer,
         });
         if (!user) break;
 
-        // PLAN: map by price ID safely
-        const priceId = sub.items.data[0].price.id;
-        const plan = priceId === priceIdByPlan.pro ? "pro" : "freemium";
-
-        // STATUS: map to allowed enum
         const status = statusMap[sub.status] || "inactive";
+        const plan = status === "active" ? "pro plan" : "freemium";
 
         user.subscription.plan = plan;
         user.subscription.status = status;
         user.subscription.stripeSubscriptionId = sub.id;
-        user.subscription.startDate = new Date(sub.start_date * 1000);
-        user.subscription.endDate = new Date(sub.current_period_end * 1000);
-
+        user.subscription.startDate = start;
+        user.subscription.endDate = end;
         user.isActive = status === "active";
         await user.save();
         break;
       }
+
+      default:
+        return res.status(200).json({ skipped: true });
     }
 
-    res.json({ received: true });
+    res.status(200).json({ received: true });
   } catch (err) {
     console.error("Error processing Stripe webhook:", err);
     res.status(500).send("Webhook handler failed");
