@@ -132,11 +132,11 @@ const handleStripeWebhook = async (req, res) => {
       req.headers["stripe-signature"],
       process.env.STRIPE_WEBHOOK_SECRET
     );
+    console.log("i am in web hook checking the api", event);
   } catch (err) {
     console.error("Webhook signature failed:", err.message);
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
-
   try {
     switch (event.type) {
       case "checkout.session.completed": {
